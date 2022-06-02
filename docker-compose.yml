@@ -1,0 +1,124 @@
+version: "3"
+services:
+  ubuntu-base:
+    build: ./ubuntu
+    image: ubuntu_base
+    container_name: ubuntu_base
+
+  jupyter-base:
+    build: ./jupyter_base
+    image: jupyter-base
+    container_name: jupyter-base
+    ports:
+      - 8888:8888
+    volumes:
+      - ./jupyter_base/tasks:/src/tasks
+    tty: true
+
+  hdfs-base:
+    build: ./hdfs
+    image: hadoop-base
+    container_name: hadoop-base
+    privileged: true
+    restart: always
+    volumes:
+      - namenode_dir:/usr/local/hadoop/data/dfs/namenode
+      - datanode_dir:/usr/local/hadoop/data/dfs/datanode
+    ports:
+        - 9870:9870
+        - 9864:9864
+        - 8088:8088
+        - 8877:8899
+        - 9000:9000
+        - 8032:8032
+        - 8030:8030
+        - 8031:8031
+        - 8042:8042
+    tty: true
+
+  hive:
+    build: ./hive
+    image: hive
+    container_name: hive
+    ports:
+        - 9083:9083
+        - 10000:10000
+        - 10002:10002
+    depends_on:
+         - postgres
+         - hdfs-base
+    volumes:
+      - ./hive/data:/usr/local/hive/data
+    tty: true
+
+  hbase:
+    build: ./hbase
+    image: hbase
+    container_name: hbase
+    ports:
+        - 60033:60000
+        - 60010:60010
+        - 60020:60020
+        - 60030:60030
+        - 8090:8090
+    depends_on:
+         - zoo-base
+         - hdfs-base
+    tty: true
+
+  spark:
+    build: ./spark
+    image: spark
+    container_name: spark
+    ports:
+        - 7077:7077
+        - 8099:8080
+        - 4044:4044
+    depends_on:
+         - hive
+    tty: true  
+
+  airflow:
+    build: ./airflow
+    image: airflow
+    container_name: airflow
+    restart: 'on-failure'
+    depends_on:
+         - postgres
+    ports:
+        - 9980:8080
+    tty: true 
+
+  postgres:
+    build: ./postgres
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: example
+
+  zoo-base:
+    build: ./zoo
+    image: zoo_base
+    container_name: zoo_base
+    restart: always
+    ports:
+        - 2888:2888
+        - 3888:3888
+        - 2181:2181
+    tty: true
+
+  kafka:
+    build: ./kafka
+    image: kafka_base
+    container_name: kafka_base
+    depends_on: ['zoo-base']
+    ports:
+        - 9092:9092
+    tty: true
+
+volumes:
+  namenode_dir:
+  datanode_dir:
+
+
